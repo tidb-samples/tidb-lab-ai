@@ -44,7 +44,7 @@ pydeck==0.9.1
 PyMySQL==1.1.1
 python-dateutil==2.9.0.post0
 python-dotenv==1.1.0
-pytidb==0.0.3
+pytidb==0.0.4
 pytz==2025.2
 PyYAML==6.0.2
 referencing==0.36.2

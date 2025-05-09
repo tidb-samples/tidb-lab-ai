@@ -23,20 +23,19 @@ Question: {question}
 Please answer:"""
 
 db = TiDBClient.connect(
-    host=os.getenv("TIDB_HOST"),
-    port=int(os.getenv("TIDB_PORT")),
-    username=os.getenv("TIDB_USERNAME"),
-    password=os.getenv("TIDB_PASSWORD"),
-    database=os.getenv("TIDB_DATABASE"),
+    host=os.getenv("SERVERLESS_CLUSTER_HOST"),
+    port=int(os.getenv("SERVERLESS_CLUSTER_PORT")),
+    username=os.getenv("SERVERLESS_CLUSTER_USERNAME"),
+    password=os.getenv("SERVERLESS_CLUSTER_PASSWORD"),
+    database=os.getenv("SERVERLESS_CLUSTER_DATABASE_NAME"),
     enable_ssl=True,
 )
 
-
-# database_url = "mysql://username:password@host:port/database"
-# db = TiDBClient.connect(database_url)
-
-text_embed = EmbeddingFunction("bedrock/amazon.titan-embed-text-v2:0")
-llm_model = "bedrock/us.deepseek.r1-v1:0"
+text_embed = EmbeddingFunction(
+    "bedrock/amazon.titan-embed-text-v2:0",
+    timeout=60
+)
+llm_model = "bedrock/us.amazon.nova-lite-v1:0"
 
 
 # Define the Chunk table

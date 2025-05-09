@@ -20,11 +20,11 @@ class QuestionSQLResponse(BaseModel):
 st.markdown("## 📖 Text2SQL")
 
 db = TiDBClient.connect(
-    host=os.getenv("TIDB_HOST"),
-    port=int(os.getenv("TIDB_PORT")),
-    username=os.getenv("TIDB_USERNAME"),
-    password=os.getenv("TIDB_PASSWORD"),
-    database=os.getenv("TIDB_DATABASE"),
+    host=os.getenv("SERVERLESS_CLUSTER_HOST"),
+    port=int(os.getenv("SERVERLESS_CLUSTER_PORT")),
+    username=os.getenv("SERVERLESS_CLUSTER_USERNAME"),
+    password=os.getenv("SERVERLESS_CLUSTER_PASSWORD"),
+    database=os.getenv("SERVERLESS_CLUSTER_DATABASE_NAME"),
     enable_ssl=True,
 )
 oai = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))

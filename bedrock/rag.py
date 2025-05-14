@@ -1,5 +1,4 @@
 import os
-import dotenv
 import pandas as pd
 
 from litellm import completion
@@ -9,8 +8,6 @@ from typing import Optional, Any
 from pytidb import TiDBClient
 from pytidb.schema import TableModel, Field
 from pytidb.embeddings import EmbeddingFunction
-
-dotenv.load_dotenv()
 
 # RAG prompt template
 RAG_PROMPT_TEMPLATE = """Answer the question based on the following reference information.

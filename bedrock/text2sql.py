@@ -3,13 +3,8 @@
 import os
 
 import boto3
-import dotenv
-from openai import OpenAI
 import streamlit as st
 from pytidb import TiDBClient
-from pydantic import BaseModel
-
-dotenv.load_dotenv()
 
 
 st.markdown("## 📖 Text2SQL")

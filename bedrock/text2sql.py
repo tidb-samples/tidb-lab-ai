@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 import os
 
+import boto3
 import dotenv
 from openai import OpenAI
 import streamlit as st
@@ -9,12 +10,6 @@ from pytidb import TiDBClient
 from pydantic import BaseModel
 
 dotenv.load_dotenv()
-
-
-class QuestionSQLResponse(BaseModel):
-    question: str
-    sql: str
-    markdown: str
 
 
 st.markdown("## 📖 Text2SQL")
@@ -27,7 +22,11 @@ db = TiDBClient.connect(
     database=os.getenv("SERVERLESS_CLUSTER_DATABASE_NAME"),
     enable_ssl=True,
 )
-oai = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+client = boto3.client(
+    service_name="bedrock-runtime",
+    region_name="us-west-2"
+)
 
 for item in ["generated", "past"]:
     if item not in st.session_state:
@@ -38,34 +37,45 @@ current_database = db._db_engine.url.database
 for table_name in db.table_names():
     table_definitions.append(db.query(f"SHOW CREATE TABLE `{table_name}`").to_rows()[0])
 
+def format_answer(answer: str) -> str:
+    # Handle ```.* specifically
+    if answer.startswith("```"):
+        # Find the first newline after the opening ```
+        first_newline = answer.find("\n")
+        if first_newline != -1:
+            # Remove everything from start to the newline
+            answer = answer[first_newline:].strip()
+
+    # Remove closing ``` if present
+    if answer.endswith("```"):
+        answer = answer[:-len("```")].strip()
+
+    return answer
 
 def on_submit():
     user_input = st.session_state.user_input
     if user_input:
-        response = (
-            oai.beta.chat.completions.parse(
-                model="gpt-4o-mini",
+        generated_sql = (
+            client.converse(
+                modelId="us.amazon.nova-pro-v1:0",
                 messages=[
-                    {
-                        "role": "system",
-                        "content": f"""
-                        You are a very senior database administrator who can write SQL very well,
+                    {"role": "user", "content": [{"text": f"Question: {user_input}\n Respond in SQL directly, without any other text and format."}]},
+                ],
+                system=[
+                    {"text": f"""You are a very senior database administrator who can write SQL very well,
                         please write MySQL SQL to answer user question,
                         Use backticks to quote table names and column names,
                         here are some table definitions in database,
                         the database name is {current_database}\n\n"""
-                        + "\n".join("|".join(t) for t in table_definitions),
-                    },
-                    {"role": "user", "content": f"Question: {user_input}\n"},
+                        + "\n".join("|".join(t) for t in table_definitions)}
                 ],
-                response_format=QuestionSQLResponse,
-            )
-            .choices[0]
-            .message.parsed
+            )["output"]["message"]["content"][0]["text"]
         )
+
+        generated_sql = format_answer(generated_sql)
         st.session_state.past.append(user_input)
 
-        if "insert" in response.sql.lower() or "update" in response.sql.lower():
+        if "insert" in generated_sql.lower() or "update" in generated_sql.lower():
             st.error(
                 "The generated SQL is not a SELECT statement, please check it carefully before running it."
             )
@@ -74,30 +84,28 @@ def on_submit():
         # Execute the SQL query and set the result
         answer = None
         try:
-            rows = db.query(response.sql).to_rows()
+            rows = db.query(generated_sql).to_rows()
             sql_result = "\n".join(str(row) for row in rows)
 
             answer = (
-                oai.chat.completions.create(
-                    model="gpt-4o-mini",
+                client.converse(
+                    modelId="us.amazon.nova-pro-v1:0",
                     messages=[
-                        {
-                            "role": "system",
-                            "content": "You are a markdown formatter, format the user input to markdown, format the data row into markdown tables.",
-                        },
-                        {
-                            "role": "user",
-                            "content": f"""
-                        Question: {response.question}\n\n
-                        SQL: {response.sql}\n\n
-                        Markdown: {response.markdown}\n\n
-                        Result: {sql_result}""",
-                        },
+                        {"role": "user", "content": [{"text": f"""
+                        Question: {user_input}\n\n
+                        SQL: {generated_sql}\n\n
+                        Result: {sql_result}"""}]},
                     ],
-                )
-                .choices[0]
-                .message.content
+                    system=[
+                        {"text": """You are a markdown formatter,
+                            format the Question and SQL to markdown text,
+                            format the data row into markdown tables.
+                            NOTE: Without any other format like ``` etc.
+                            """}
+                    ],
+                )["output"]["message"]["content"][0]["text"]
             )
+            answer = format_answer(answer)
             st.session_state.generated.append(answer)
         except Exception as e:
             st.session_state.generated.append(f"Error: {e}")

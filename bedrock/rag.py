@@ -80,17 +80,8 @@ st.title("🔍 RAG Demo")
 
 st.subheader("Database Operations")
 
-left, right = st.columns(2)
-
-if left.button("Reset", type="primary"):
-    left.write("Resetting...")
-    table.truncate()
-    st.rerun()
-
-left.markdown("This option <span style='color: red;'>will delete all data</span></h3>", unsafe_allow_html=True)
-
-if right.button("Save Data"):
-    right.write("Saving...")
+if st.button("Save Data", type="primary"):
+    st.write("Saving...")
     # insert sample chunks
     if table.rows() == 0:
         chunks = [Chunk(text=text) for text in sample_chunks]
@@ -112,6 +103,14 @@ st.write(
 mode = st.radio("Select Mode:", ["Retrieval Only", "RAG Q&A"])
 
 query_limit = st.sidebar.slider("Retrieval Limit", min_value=1, max_value=20, value=5)
+
+st.sidebar.markdown("---")
+st.sidebar.markdown("This option <span style='color: red;'>will delete all data</span></h3>", unsafe_allow_html=True)
+if st.sidebar.button("Reset"):
+    st.sidebar.write("Resetting...")
+    table.truncate()
+    st.rerun()
+
 query = st.text_input("Enter your question:", "")
 
 if st.button("Send") and query:

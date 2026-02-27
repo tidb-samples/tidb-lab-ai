@@ -52,7 +52,10 @@ def on_submit():
     if user_input:
         generated_sql = (
             client.converse(
-                modelId="us.amazon.nova-pro-v1:0",
+                # We use AWS Inference Profile here to track costs.
+                # If you are using this code outside of TiDB Labs, you need to use the original model ID like below.
+                # modelId="us.amazon.nova-pro-v1:0",
+                modelId="arn:aws:bedrock:us-west-2:841162690310:application-inference-profile/4i83xkynoouo",
                 messages=[
                     {"role": "user", "content": [{"text": f"Question: {user_input}\n Respond in SQL directly, without any other text and format."}]},
                 ],
@@ -84,7 +87,10 @@ def on_submit():
 
             answer = (
                 client.converse(
-                    modelId="us.amazon.nova-pro-v1:0",
+                    # We use AWS Inference Profile here to track costs.
+                    # If you are using this code outside of TiDB Labs, you need to use the original model ID like below.
+                    # modelId="us.amazon.nova-pro-v1:0",
+                    modelId="arn:aws:bedrock:us-west-2:841162690310:application-inference-profile/4i83xkynoouo",
                     messages=[
                         {"role": "user", "content": [{"text": f"""
                         Question: {user_input}\n\n
